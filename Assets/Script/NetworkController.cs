@@ -65,6 +65,9 @@ public class NetworkController  {
         // byte 배열을 구조체로 변환합니다.
         RPSKind rps = (RPSKind)data[0];
 
+        Debug.Log("rps-" + data+"-rps");
+
+   
         return rps;
     }
 
@@ -85,12 +88,18 @@ public class NetworkController  {
         if(recvSize>0)
         {
             name = System.Text.Encoding.UTF8.GetString(data);
+            Debug.Log(data +"   recevie data nickname");
         }
 
 
 
         return name;
         
+    }
+
+    public void StopServer()
+    {
+        network.StopServer();
     }
 	
 

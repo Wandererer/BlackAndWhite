@@ -4,6 +4,8 @@ using System.Collections;
 public class RPSSelector : MonoBehaviour {
 
     RPSKind selected;
+    private int selectedRPS = -1;
+
 
 	// Use this for initialization
 	void Start () {
@@ -22,8 +24,10 @@ public class RPSSelector : MonoBehaviour {
             if (p.IsSelected())
             {
                 selected = p.rpsKind;
-                //다른건 없애버리게 나중에 넣어본다
+                Debug.Log("Clickedrps");
+                Debug.Log(selected);
 
+              
             }
 
         }
@@ -42,7 +46,7 @@ public class RPSSelector : MonoBehaviour {
         RPSPanel[] panels = transform.GetComponentsInChildren<RPSPanel>();
         foreach (RPSPanel p in panels)
         {
-            if (p.IsEnd() == false)
+            if (p.IsSelected() == false)
             {   // 연출 대기일 때는 미결정으로 다룹니다.
                 return RPSKind.None;
             }
@@ -50,5 +54,12 @@ public class RPSSelector : MonoBehaviour {
 
         return selected;
     }
+
+    public RPSKind GetRps()
+    {
+        return selected;
+    }
+
+
     
 }

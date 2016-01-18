@@ -32,6 +32,9 @@ public class RPSPanel : MonoBehaviour {
             case State.SelectWait:
                 UpdateSelectWait();
                 break;
+            case State.OnSelected:
+
+                break;
         }
 	}
 
@@ -45,7 +48,9 @@ public class RPSPanel : MonoBehaviour {
             transform.localScale = Vector3.one * 1.2f;
             if (Input.GetMouseButtonDown(0))
             {
-                isSelected = true;    //클릭됨.    
+                Debug.Log("Clicked");
+                isSelected = true;    //클릭됨.   
+                state = State.OnSelected;
             }
         }
         else
