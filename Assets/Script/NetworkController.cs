@@ -65,6 +65,9 @@ public class NetworkController  {
         // byte 배열을 구조체로 변환합니다.
         RPSKind rps = (RPSKind)data[0];
 
+        if ((int)rps > 2 || (int)rps < -1)
+            return RPSKind.None;
+
         Debug.Log("rps-" + data+"-rps");
 
    

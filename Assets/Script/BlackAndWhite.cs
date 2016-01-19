@@ -18,9 +18,11 @@ public class BlackAndWhite : MonoBehaviour {
 
     ArrayList nameList;
 
-    bool isBgCreated = false;
-    bool isRPSSelected = false;
-    bool isOppSendRPS = false;
+    bool isBgCreated = false;  //가위바위보를 위한 게임화면 흐릿하게
+    bool isRPSSelected = false; //내가 가위바위보 골랐나
+    bool isOppSendRPS = false; //상대가 가위바위보를 골랐나
+    bool isMyTurn = false;
+    bool isCheckWinner = false;
 
     const int PLAYER_NUM = 2;
     const int PLAY_MAX = 3;
@@ -44,10 +46,13 @@ public class BlackAndWhite : MonoBehaviour {
     float height;
 
     float waitTime = 5.0f; //기다리는 시간
-
+    float waitThreeSec = 3.0f;
+    float waitForPlay = 3.0f;
     float sendTime = -1.0f;  //보내는 시간
 
-    private RPSSelector rpsSelector;
+
+
+    Winner winner = Winner.None;  //누가 이겼나
 
    
 
@@ -57,6 +62,7 @@ public class BlackAndWhite : MonoBehaviour {
         Ready,      // 게임 상대의 로그인 대기.
         SelectRPS,  //가위바위보 선택.
         ChooseWinner,    //가위바위보 서로 확인.
+        StartGame,   //게임 시작
         EndGame,    //끝.
         Disconnect,	//오류.
     };
@@ -114,10 +120,17 @@ public class BlackAndWhite : MonoBehaviour {
          case GameState.ChooseWinner:
                 ShowOppRPS();
                 IsConnectedFalse();
+                CalculateWinner();
+             CheckWinnerState();
+                break;
+
+         case GameState.StartGame:
+                IsConnectedFalse();
                 break;
 
          default:
                 Debug.Log(gameState + "   sdfasdf");
+                IsConnectedFalse();
                 break;
         }
 	}
@@ -141,7 +154,12 @@ public class BlackAndWhite : MonoBehaviour {
 
             case GameState.ChooseWinner:
                 PrintPlayersNickName();
-                WaitFiveSeconds();
+                WaitFiveSecondsForShowRPSResult();
+                WaitThreeSecondsForShowRPSResultState();
+                break;
+
+            case GameState.StartGame:
+                PrintPlayersNickName();
                 break;
 
       
@@ -349,16 +367,132 @@ public class BlackAndWhite : MonoBehaviour {
             obj2.name="OppSelectRPS";
             nameList.Add(obj2.name);
             obj2.GetComponent<Transform>().position=  new Vector3(0, 4, 0);
+
+        }
+
+    }
+
+    void CalculateWinner()
+    {
+           if(selectedRPS!=RPSKind.None && selectedOppRPS!=RPSKind.None)
+        {
+            isCheckWinner = true;
+            winner = ResultChecker.GetRPSWinner(selectedRPS, selectedOppRPS);
+            Debug.Log("계산완료  " + winner);
         }
     }
 
-    void WaitFiveSeconds()
+
+           
+    void CheckWinnerState()
+    {
+        if(winner!=Winner.None)
+        {
+            switch(winner)
+            {
+                case Winner.Win:
+
+                    isMyTurn = true;
+                    if (waitForPlay < 0.5f)
+                    {
+                        gameState = GameState.StartGame;
+                        ClearPrefab();
+                    }
+                    break;
+                case Winner.Draw:
+
+                    if (waitForPlay < 0.5f)
+                    {
+                        foreach (string name in nameList)
+                        {
+                            try
+                            {
+                                GameObject obj = GameObject.Find(name);
+                                Destroy(obj);
+                                Debug.Log(name);
+                            }
+
+                            catch
+                            {
+
+                            }
+
+
+                        }
+
+                        nameList.Clear();
+                        ClearForDraw();
+                        gameState = GameState.SelectRPS;
+
+                    }
+
+
+                    break;
+
+                case Winner.Loss:
+
+                    if (waitForPlay < 0.5f)
+                    {
+                        gameState = GameState.StartGame;
+                        ClearPrefab();
+                    }
+                    break;
+            }
+        }
+    }
+
+    void WaitFiveSecondsForShowRPSResult()
     {
         if (waitTime > 0.5f)
         {
             font.fontSize = 100;
             waitTime -= Time.deltaTime;
+            if(waitTime>=1.3f)
             GUI.Label(new Rect(Screen.width / 2-20, Screen.height / 2-70, 200, 50),( (int)waitTime).ToString(), font);
+        }
+    }
+
+    void WaitThreeSecondsForShowRPSResultState()
+    {
+        if(waitThreeSec>0.5f && waitTime<0.6f)
+        {
+            waitTime -= Time.deltaTime;
+            WinnerCheckAndPrint();
+
+        }
+    }
+
+    void WinnerCheckAndPrint()
+    {
+        switch(winner)
+        {
+            case Winner.None:
+
+                break;
+
+            case Winner.Draw:
+                       font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 176, Screen.height / 2 - 70, 200, 50), "무 승 부", font);
+                Debug.Log("결과 출력");
+                waitForPlay -= Time.deltaTime;
+
+                break;
+
+            case Winner.Win:
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "승  리", font);
+                Debug.Log("결과 출력");
+
+                waitForPlay -= Time.deltaTime;
+                break;
+
+            case Winner.Loss:
+                       font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "패  배", font);
+                Debug.Log("결과 출력");
+  
+                waitForPlay -= Time.deltaTime;
+                break;
         }
     }
 
@@ -366,14 +500,14 @@ public class BlackAndWhite : MonoBehaviour {
     {
         if (networkController.IsConnected())
         {
-            if (isOppSendRPS)
+            if (isOppSendRPS &&  !isCheckWinner)
             {
                 font.fontSize = 32;
                 GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2 - 20, 200, 50), "상대방 선택 완료", font);
 
             }
 
-            else
+            else if (!isOppSendRPS && !isCheckWinner)
             {
                 font.fontSize = 32;
                 GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2 - 20, 200, 50), "상대방 선택중", font);
@@ -426,33 +560,42 @@ public class BlackAndWhite : MonoBehaviour {
     void IsConnectedFalse()
     {
 
-        Debug.Log("GameState Connedted False");
+       
         if(networkController.IsConnected()==false)
         {
             Debug.Log("GameState Connedted False");
-           
-            foreach(string name in nameList)
-            {
-                try
-                {
-                    GameObject obj = GameObject.Find(name);
-                    Destroy(obj);
-                    Debug.Log(name);
-                }
 
-                catch{
-
-                }
-
-              
-            }
+            ClearPrefab();
             gameState = GameState.None;
             networkController.StopServer();
             networkController = null;
             ClearAll();
-            nameList.Clear();
+        
 
         }
+    }
+
+    void ClearPrefab()
+    {
+
+        foreach (string name in nameList)
+        {
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                Destroy(obj);
+                Debug.Log(name);
+            }
+
+            catch
+            {
+
+            }
+
+
+        }
+
+        nameList.Clear();
     }
 
 
@@ -461,8 +604,11 @@ public class BlackAndWhite : MonoBehaviour {
         isBgCreated = false;
         isRPSSelected = false;
         isOppSendRPS = false;
-
+        isCheckWinner = false;
         nickName = "닉네임"; //내 닉네임
+
+
+        winner = Winner.None;
         selectedRPS = RPSKind.None;
         selectedOppRPS = RPSKind.None;
         oppNickName = ""; //상대편 닉네임
@@ -470,6 +616,24 @@ public class BlackAndWhite : MonoBehaviour {
 
         sendTime = -1.0f;  //보내는 시간
         isGameOver = false;  //게임이 끝났는지 
+
+    }
+
+    void ClearForDraw()
+    {
+        isRPSSelected = false;
+        isOppSendRPS = false;
+        isBgCreated = false;
+        isCheckWinner = false;
+        selectedRPS = RPSKind.None;
+        selectedOppRPS = RPSKind.None;
+
+        winner = Winner.None;
+    waitTime = 5.0f; //기다리는 시간
+         waitThreeSec = 3.0f;
+         waitForPlay = 3.0f;
+         sendTime = -1.0f;  //보내는 시간
+
 
     }
  
