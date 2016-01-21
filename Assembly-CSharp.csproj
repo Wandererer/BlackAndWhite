@@ -52,7 +52,9 @@
      <Compile Include="Assets\Script\PacketQueue.cs" />
      <Compile Include="Assets\Script\RPSPanel.cs" />
      <Compile Include="Assets\Script\RPSSelector.cs" />
+     <Compile Include="Assets\Script\RPointsController.cs" />
      <Compile Include="Assets\Script\TCP.cs" />
+     <Compile Include="Assets\Script\TextChanger.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>

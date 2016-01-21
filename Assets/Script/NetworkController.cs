@@ -67,6 +67,9 @@ public class NetworkController  {
 
         Debug.Log("rps-" + data+"-rps");
 
+        if (data[0] > 2 || data[0] < -1)
+            return RPSKind.None;
+
    
         return rps;
     }
