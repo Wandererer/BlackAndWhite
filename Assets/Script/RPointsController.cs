@@ -17,21 +17,9 @@ public class RPointsController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-
-        try
-        {
-
-
-            CheckPoint();
-        }
-
-        catch{
-
-        }
-
 	}
 
-    void CheckPoint()
+    public void CheckPoint()
     {
         for(int i=0;i<limit.Length;i++)
         {
@@ -42,7 +30,7 @@ public class RPointsController : MonoBehaviour {
         }
     }
 
-    void SetPoint(int point)
+    public void SetPoint(int point)
     {
         points = point;
     }

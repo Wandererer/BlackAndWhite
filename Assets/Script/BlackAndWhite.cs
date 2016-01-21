@@ -27,7 +27,8 @@ public class BlackAndWhite : MonoBehaviour {
      bool isCheckWinner = false;
 
 
-
+     RPointsController oppPointController;
+     RPointsController myPointController;
 
     const int PLAYER_NUM = 2;
     const int PLAY_MAX = 3;
@@ -85,6 +86,12 @@ public class BlackAndWhite : MonoBehaviour {
 
         font = new GUIStyle();
 
+        oppPointController = oppPoints.GetComponent<RPointsController>();
+        myPointController = myPoints.GetComponent<RPointsController>();
+
+        oppPointController.SetPoint(99);
+        myPointController.SetPoint(99);
+
         GameObject go = new GameObject("Network");
         if(go!=null)
         {
@@ -133,6 +140,7 @@ public class BlackAndWhite : MonoBehaviour {
 
          case GameState.StartGame:
                 IsConnectedFalse();
+                SpawnPoints();
                 break;
 
          default:
@@ -569,6 +577,27 @@ public class BlackAndWhite : MonoBehaviour {
             ClearAll();
             nameList.Clear();
 
+        }
+    }
+  
+
+    void SpawnPoints()
+    {
+        GameObject obj1 = GameObject.Find("oppPoints");
+        GameObject obj2 = GameObject.Find("myPoints");
+
+        if(obj1 ==null && obj2==null)
+        {
+            obj1 = Instantiate(oppPoints);
+            obj1.GetComponent<Transform>().position =new Vector3(-10, 12, 0);
+            obj1.name = "oppPoints";
+            nameList.Add(obj1.name);
+            
+            obj2 = Instantiate(myPoints);
+            obj2.GetComponent<Transform>().position = new Vector3(7.5f, 12, 0);
+            obj2.name = "myPoints";
+            nameList.Add(obj1.name);
+            
         }
     }
     
