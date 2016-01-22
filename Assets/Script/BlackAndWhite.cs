@@ -11,6 +11,9 @@ public class BlackAndWhite : MonoBehaviour {
     public GameObject[] rpsPanelPrefab;
     public GameObject oppPoints;
     public GameObject myPoints;
+    public GameObject myTurnShowPrefab;
+    public GameObject oppTurnShowPrefab;
+    public GameObject editAgainPrefab;
 
 
     GameObject findObject; //찾아서 적용 시킬거
@@ -46,6 +49,10 @@ public class BlackAndWhite : MonoBehaviour {
 
     string oppNickName = ""; //상대편 닉네임
 
+    string pointString = "";
+
+    int point;
+
     bool isGameOver = false;  //게임이 끝났는지 
 
     float width;
@@ -54,6 +61,7 @@ public class BlackAndWhite : MonoBehaviour {
     float waitTime = 5.0f; //기다리는 시간
      float waitThreeSec = 3.0f;
     float waitForPlay = 4.0f;
+    float waitTwoSecond = -1.0f;
     float sendTime = -1.0f;  //보내는 시간
 
     Winner winner = Winner.None;  //누가 이겼나
@@ -69,6 +77,8 @@ public class BlackAndWhite : MonoBehaviour {
         SelectRPS,  //가위바위보 선택.
         ChooseWinner,    //가위바위보 서로 확인.
         StartGame,   //게임 시작
+        Proceed, //게임 진행
+        ShowResult, //라운드 결과
         EndGame,    //끝.
         Disconnect,	//오류.
     };
@@ -143,6 +153,16 @@ public class BlackAndWhite : MonoBehaviour {
                 SpawnPoints();
                 break;
 
+         case GameState.Proceed:
+                IsConnectedFalse();
+                showMyTurnOrOppTurn();
+                DestroyAgainTextAfterTwoSeconds();
+                break;
+
+         case GameState.ShowResult:
+
+                break;
+
          default:
                 Debug.Log(gameState + "   sdfasdf");
                 IsConnectedFalse();
@@ -176,8 +196,19 @@ public class BlackAndWhite : MonoBehaviour {
 
             case GameState.StartGame:
                 PrintPlayersNickName();
+
+                break;
+
+            case GameState.Proceed:
+                PrintPlayersNickName();
+                MakeTextAreaAndButtonForSend();
+                break;
+
+            case GameState.ShowResult:
+
+                break;
                   
-                  break;
+                
       
         }
     }
@@ -206,6 +237,7 @@ public class BlackAndWhite : MonoBehaviour {
                      if (waitForPlay < 0.5f)
                      {
                          gameState = GameState.StartGame;
+                         isMyTurn = true;
                          ClearPrefab();
                      }
                      break;
@@ -267,7 +299,7 @@ public class BlackAndWhite : MonoBehaviour {
                  font.fontSize = 100;
                  GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "승  리", font);
                  Debug.Log("결과 출력");
- 
+            
                  waitForPlay -= Time.deltaTime;
                  break;
  
@@ -282,7 +314,7 @@ public class BlackAndWhite : MonoBehaviour {
      }
  
 
-    void StartScreen()
+    void StartScreen() //최초 시작 화면
     {
         float px = Screen.width*0.5f;
         float py = Screen.height*0.5f;
@@ -313,7 +345,7 @@ public class BlackAndWhite : MonoBehaviour {
     }
 
     
-    void CheckOpponentNickName()
+    void CheckOpponentNickName()  //첫 통신시 상대편 닉네임 확인
     {
         if(networkController.IsConnected()  )
         {
@@ -337,7 +369,7 @@ public class BlackAndWhite : MonoBehaviour {
 
 
 
-    void PrintPlayersNickName()
+    void PrintPlayersNickName()  // 각 플레이어 이름 생성
     {
         GUI.Label(new Rect(width - 100f, 30, 120, 20), "이름 : "+nickName);
        // Debug.Log(nickName);
@@ -345,7 +377,7 @@ public class BlackAndWhite : MonoBehaviour {
        // Debug.Log("printopp  :"+oppNickName);
     }
 
-    void SpawnBgAndRPS()
+    void SpawnBgAndRPS()  //가위바위보 위에 뒷배경 회색과 가위바위보 생성
     {
         if (!isBgCreated)
         {
@@ -366,7 +398,7 @@ public class BlackAndWhite : MonoBehaviour {
         
     }
 
-    void ProcessingRPSSelect()
+    void ProcessingRPSSelect()  //가위바위보 골랐으면 그거 없애고 선택한거만 생성
     {
        // 
 
@@ -426,7 +458,7 @@ public class BlackAndWhite : MonoBehaviour {
 
     }
 
-    private int CastIntFromRPS(RPSKind select)
+    private int CastIntFromRPS(RPSKind select) //RPS 중 하나 생성하기위해 바꾸기 용도
     {
         int result=-1;
 
@@ -536,6 +568,44 @@ public class BlackAndWhite : MonoBehaviour {
             nameList.Add(obj.name);
         }
 
+        
+
+
+    }
+
+    void showMyTurnOrOppTurn()
+    {
+        if (isMyTurn)
+        {
+            
+          
+
+            GameObject  obj = GameObject.Find("MYTURN");
+            if (obj == null)
+            {
+               
+
+                obj = Instantiate(myTurnShowPrefab);
+                obj.GetComponent<Transform>().position = new Vector3(8.8f, 4, 0);
+                obj.name = "MYTURN";
+            }
+
+        }
+        else
+        {
+           
+
+            GameObject obj = GameObject.Find("OPPTURN");
+            if (obj == null)
+            {
+                GameObject obj2 = GameObject.Find("MYTURN");
+                Destroy(obj2);
+
+                obj = Instantiate(oppTurnShowPrefab);
+                obj.GetComponent<Transform>().position = new Vector3(-8.8f, 4, 0);
+                obj.name = "OPPTURN";
+            }
+        }
 
     }
 
@@ -581,25 +651,93 @@ public class BlackAndWhite : MonoBehaviour {
     }
   
 
-    void SpawnPoints()
+    void SpawnPoints()  //포인트 상황 표현
     {
         GameObject obj1 = GameObject.Find("oppPoints");
         GameObject obj2 = GameObject.Find("myPoints");
 
-        if(obj1 ==null && obj2==null)
+        if (obj1 == null && obj2 == null)
         {
             obj1 = Instantiate(oppPoints);
-            obj1.GetComponent<Transform>().position =new Vector3(-10, 12, 0);
+            obj1.GetComponent<Transform>().position = new Vector3(-10.2f, 11, 0);
             obj1.name = "oppPoints";
             nameList.Add(obj1.name);
-            
+
             obj2 = Instantiate(myPoints);
-            obj2.GetComponent<Transform>().position = new Vector3(7.5f, 12, 0);
+            obj2.GetComponent<Transform>().position = new Vector3(7.5f, 11, 0);
             obj2.name = "myPoints";
             nameList.Add(obj1.name);
-            
+
+            myPointController.SetPoint(99);
+            oppPointController.SetPoint(99);
+
+        }
+
+        else if(obj1!=null && obj2!=null)
+        {
+            gameState = GameState.Proceed;
         }
     }
+
+    void MakeTextAreaAndButtonForSend()
+    {
+        if(isMyTurn)
+        {
+            pointString = GUI.TextField(new Rect(Screen.width / 2 - 40, Screen.height / 2 - 70, 100, 50), pointString);
+            if(GUI.Button(new Rect(Screen.width / 2 - 40, Screen.height / 2, 100, 50), "보 내 기"))
+            {
+
+                try
+                {
+                    point = int.Parse(pointString);
+                }
+
+                catch
+                {
+                    GameObject obj = GameObject.Find("Again");
+                    obj = Instantiate(editAgainPrefab);
+                    obj.name = "Again";
+                    obj.GetComponent<Transform>().position = new Vector3(-3, 5, 0);
+                    waitTwoSecond = 2.0f;
+                }
+
+                if (point > 99 || point < 0)
+                {
+                    waitTwoSecond = 2.0f;
+                    pointString = "";
+
+                        GameObject obj = GameObject.Find("Again");
+                        if (obj == null)
+                        {
+
+                            obj = Instantiate(editAgainPrefab);
+                            obj.name = "Again";
+                            obj.GetComponent<Transform>().position = new Vector3(-3, 5, 0);
+                        }
+
+                }
+            }
+        }
+    }
+
+    void DestroyAgainTextAfterTwoSeconds()
+    {
+       
+
+        if(waitTwoSecond>0.5f)
+        {
+            waitTwoSecond -= Time.deltaTime;
+ 
+            
+        }
+
+        else
+        {
+            GameObject obj = GameObject.Find("Again");
+            Destroy(obj);
+        }
+    }
+
     
     void ClearPrefab()
      {

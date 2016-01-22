@@ -87,6 +87,8 @@ public class NetworkController  {
         byte[] data = new byte[1024];
         string name="";
 
+       
+
         int recvSize = network.Receive(ref data, data.Length);
         if(recvSize>0)
         {
@@ -98,6 +100,33 @@ public class NetworkController  {
 
         return name;
         
+    }
+
+    public void SendPoints(int point)
+    {
+        byte[] data = new byte[1];
+
+        data[0] = (byte)point;
+
+        network.Send(data, data.Length);
+    }
+
+    public int ReceivePoint()
+    {
+        byte[] data = new byte[1024];
+       
+
+        int recvSize = network.Receive(ref data, data.Length);
+       if(recvSize<0)
+       {
+           return -1;
+       }
+       int point = (int)data[0];
+
+       if (point > 99 || point < 0)
+           return -1;
+
+       return point;
     }
 
     public void StopServer()
