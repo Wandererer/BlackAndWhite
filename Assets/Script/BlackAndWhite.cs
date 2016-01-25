@@ -9,11 +9,14 @@ public class BlackAndWhite : MonoBehaviour {
     public GameObject OppSelectSingleRPS;
     public GameObject oppRPsSelectorPrefab;
     public GameObject[] rpsPanelPrefab;
-    public GameObject oppPoints;
-    public GameObject myPoints;
+    public GameObject oppPointsPrefab;
+    public GameObject myPointsPrefab;
     public GameObject myTurnShowPrefab;
     public GameObject oppTurnShowPrefab;
     public GameObject editAgainPrefab;
+    public GameObject blackForPointResultPrefab;
+    public GameObject whiteForPointResultPrefab;
+    public GameObject waitingSignPrefab;
 
 
     GameObject findObject; //찾아서 적용 시킬거
@@ -22,12 +25,15 @@ public class BlackAndWhite : MonoBehaviour {
     RPSKind selectedOppRPS=RPSKind.None;
 
     ArrayList nameList;
+    ArrayList gameInitList;
 
     bool isBgCreated = false;  //가위바위보를 위한 게임화면 흐릿하게
    bool isRPSSelected = false; //내가 가위바위보 골랐나
    bool isOppSendRPS = false; //상대가 가위바위보를 골랐나
      bool isMyTurn = false;
      bool isCheckWinner = false;
+     bool isFirst = false;
+     bool isReceivePoint = false;
 
 
      RPointsController oppPointController;
@@ -35,12 +41,9 @@ public class BlackAndWhite : MonoBehaviour {
 
     const int PLAYER_NUM = 2;
     const int PLAY_MAX = 3;
-
-    ArrayList array;
+ 
 
     GUIStyle font;  //폰트 설정
-
-    InputData[] m_inputData = new InputData[PLAYER_NUM];
     NetworkController networkController = null;  //네트워크 연결용
 
     string ipAddr = "";
@@ -51,12 +54,14 @@ public class BlackAndWhite : MonoBehaviour {
 
     string pointString = "";
 
-    int point;
+    int myPoint=-1;
+    int oppPoint = -1;
 
     bool isGameOver = false;  //게임이 끝났는지 
 
     float width;
     float height;
+    float width2;
 
     float waitTime = 5.0f; //기다리는 시간
      float waitThreeSec = 3.0f;
@@ -90,14 +95,22 @@ public class BlackAndWhite : MonoBehaviour {
         width = Screen.width;
         height = Screen.height;
 
+        Debug.Log(width + "  " + height + "크기");
+
         gameState = GameState.None;
+       
+
+        
 
         nameList = new ArrayList();
-
+        gameInitList = new ArrayList();
+       
+     
+        //Debug.Log("테스트  " + );
         font = new GUIStyle();
 
-        oppPointController = oppPoints.GetComponent<RPointsController>();
-        myPointController = myPoints.GetComponent<RPointsController>();
+        oppPointController = oppPointsPrefab.GetComponent<RPointsController>();
+        myPointController = myPointsPrefab.GetComponent<RPointsController>();
 
         oppPointController.SetPoint(99);
         myPointController.SetPoint(99);
@@ -157,10 +170,17 @@ public class BlackAndWhite : MonoBehaviour {
                 IsConnectedFalse();
                 showMyTurnOrOppTurn();
                 DestroyAgainTextAfterTwoSeconds();
+                CreatePointResult();
+                ReceiveOppPointSecondAttack();
+                WaitingSignOppPointAndCreateOppResultForSecondAttacker();
+                ChangeGameStateForSecondAttacker();
+               
                 break;
 
          case GameState.ShowResult:
-
+                IsConnectedFalse();
+                ReceiveOppPointFirstAttack();
+                WaitingSignOppPointAndCreateOppResultForFirstAttacker();
                 break;
 
          default:
@@ -205,7 +225,7 @@ public class BlackAndWhite : MonoBehaviour {
                 break;
 
             case GameState.ShowResult:
-
+                PrintPlayersNickName();
                 break;
                   
                 
@@ -233,11 +253,11 @@ public class BlackAndWhite : MonoBehaviour {
              {
                  case Winner.Win:
  
-                     isMyTurn = true;
                      if (waitForPlay < 0.5f)
                      {
                          gameState = GameState.StartGame;
                          isMyTurn = true;
+                         isFirst = true;
                          ClearPrefab();
                      }
                      break;
@@ -259,6 +279,7 @@ public class BlackAndWhite : MonoBehaviour {
                      if (waitForPlay < 0.5f)
                     {
                         gameState = GameState.StartGame;
+                        isMyTurn = false;
                         ClearPrefab();
                     }
                      break;
@@ -299,7 +320,7 @@ public class BlackAndWhite : MonoBehaviour {
                  font.fontSize = 100;
                  GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "승  리", font);
                  Debug.Log("결과 출력");
-            
+                
                  waitForPlay -= Time.deltaTime;
                  break;
  
@@ -387,6 +408,7 @@ public class BlackAndWhite : MonoBehaviour {
            obj.GetComponent<Transform>().position = new Vector3(0, -4, 0);
            obj.name = "RPSSelector";
            nameList.Add(obj.name);
+
 
            obj = Instantiate(oppRPsSelectorPrefab) as GameObject;
            obj.GetComponent<Transform>().position = new Vector3(0, 3, 0);
@@ -583,12 +605,15 @@ public class BlackAndWhite : MonoBehaviour {
             GameObject  obj = GameObject.Find("MYTURN");
             if (obj == null)
             {
-               
+                GameObject obj2 = GameObject.Find("OPPTURN");
+                Destroy(obj2);
+
 
                 obj = Instantiate(myTurnShowPrefab);
-                obj.GetComponent<Transform>().position = new Vector3(8.8f, 4, 0);
+                obj.GetComponent<Transform>().position = new Vector3(7f, 4, 0);
                 obj.name = "MYTURN";
             }
+
 
         }
         else
@@ -602,7 +627,7 @@ public class BlackAndWhite : MonoBehaviour {
                 Destroy(obj2);
 
                 obj = Instantiate(oppTurnShowPrefab);
-                obj.GetComponent<Transform>().position = new Vector3(-8.8f, 4, 0);
+                obj.GetComponent<Transform>().position = new Vector3(-7f, 4, 0);
                 obj.name = "OPPTURN";
             }
         }
@@ -656,24 +681,40 @@ public class BlackAndWhite : MonoBehaviour {
         GameObject obj1 = GameObject.Find("oppPoints");
         GameObject obj2 = GameObject.Find("myPoints");
 
-        if (obj1 == null && obj2 == null)
+        if (obj1 == null )
         {
-            obj1 = Instantiate(oppPoints);
-            obj1.GetComponent<Transform>().position = new Vector3(-10.2f, 11, 0);
+            obj1 = Instantiate(oppPointsPrefab);
+
+
+            obj1.GetComponent<Transform>().position = new Vector3(-7.72f, 3.22f, 0);
+           // obj1.GetComponent<Transform>().position = tPos;
             obj1.name = "oppPoints";
             nameList.Add(obj1.name);
 
-            obj2 = Instantiate(myPoints);
-            obj2.GetComponent<Transform>().position = new Vector3(7.5f, 11, 0);
-            obj2.name = "myPoints";
-            nameList.Add(obj1.name);
+           
+            Vector3 tmpPos = Camera.main.WorldToScreenPoint(new Vector3(-8.53f,3.22f,0));
+            //Vector3 tmpPos = Camera.main.WorldToScreenPoint(new Vector3(0,0,0 ));
+           // Vector3 tmpPos = Camera.main.ScreenToWorldPoint(new Vector3(839, 472, 0));
+            Debug.Log(Camera.main.pixelWidth + " camera " + Camera.main.pixelHeight);
+            Debug.Log(tmpPos + " screentoworld");
 
-            myPointController.SetPoint(99);
-            oppPointController.SetPoint(99);
+            
 
         }
 
-        else if(obj1!=null && obj2!=null)
+         if(obj2==null)
+          {
+                obj2 = Instantiate(myPointsPrefab);
+                Vector3 tmpPos = Camera.main.ScreenToWorldPoint(new Vector3(717.8f,340.8f,10.0f));
+               obj2.GetComponent<Transform>().position = new Vector3(5.5f, 3.22f, 0);
+               // obj2.GetComponent<Transform>().position = tmpPos;
+                Debug.Log(tmpPos + " obj2 screentoworld");
+                obj2.name = "myPoints";
+                nameList.Add(obj2.name);
+                
+          }
+
+    if(obj1!=null && obj2!=null)
         {
             gameState = GameState.Proceed;
         }
@@ -689,7 +730,7 @@ public class BlackAndWhite : MonoBehaviour {
 
                 try
                 {
-                    point = int.Parse(pointString);
+                    myPoint = int.Parse(pointString);
                 }
 
                 catch
@@ -701,22 +742,201 @@ public class BlackAndWhite : MonoBehaviour {
                     waitTwoSecond = 2.0f;
                 }
 
-                if (point > 99 || point < 0)
+                if (myPoint > 99 || myPoint < 0 || myPointController.points-myPoint<0)
                 {
                     waitTwoSecond = 2.0f;
                     pointString = "";
+                    myPoint = -1;
+                    GameObject obj = GameObject.Find("Again");
+                    if (obj == null)
+                    {
 
-                        GameObject obj = GameObject.Find("Again");
-                        if (obj == null)
-                        {
+                        obj = Instantiate(editAgainPrefab);
+                        obj.name = "Again";
+                        obj.GetComponent<Transform>().position = new Vector3(-3, 5, 0);
+                    }
 
-                            obj = Instantiate(editAgainPrefab);
-                            obj.name = "Again";
-                            obj.GetComponent<Transform>().position = new Vector3(-3, 5, 0);
-                        }
+                }
+                else
+                {
+                    networkController.SendPoints(myPoint);
+                    myPointController.SetPoint(myPointController.points - myPoint);
+
+                    Debug.Log(myPointController.getPoint() + " mypoint ");
+                    isMyTurn = false;
 
                 }
             }
+        }
+    }
+
+
+    void CreatePointResult()
+    {
+        if(myPoint!=-1)
+        {
+            if(myPoint<10)
+            {
+                GameObject obj = GameObject.Find("myBlack");
+                if(obj==null)
+                {
+                    obj = Instantiate(blackForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(4, 1, 0);
+                    obj.name = "myBlack";
+                    gameInitList.Add(obj.name);
+                }
+            }
+
+            else
+            {
+                GameObject obj = GameObject.Find("myWhite");
+                if (obj == null)
+                {
+                    obj = Instantiate(whiteForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(4, 1, 0);
+                    obj.name = "myWhite";
+                    gameInitList.Add(obj.name);
+                }
+            }
+        }
+    }
+
+    void ReceiveOppPointSecondAttack()
+    {
+        if(oppPoint==-1 && isFirst==false)
+        {
+           oppPoint=networkController.ReceivePoint();
+        }
+    }
+
+    void ReceiveOppPointFirstAttack()
+    {
+        if (oppPoint == -1 && isFirst == true)
+        {
+            oppPoint = networkController.ReceivePoint();
+        }
+    }
+
+    void ChangeGameStateForSecondAttacker()
+    {
+        if (oppPoint != -1 && myPoint != -1)
+            gameState = GameState.ShowResult;
+    }
+
+    void WaitingSignOppPointAndCreateOppResultForFirstAttacker()
+    {
+        if (oppPoint == -1 && isFirst)
+        {
+            GameObject obj = GameObject.Find("Waiting");
+            if (obj == null)
+            {
+                obj = Instantiate(waitingSignPrefab);
+                obj.GetComponent<Transform>().position = new Vector3(-2.5f, 5, 0);
+                obj.name = "Waiting";
+            }
+        }
+        else if(oppPoint!=-1 && isFirst)
+        {
+            if (isReceivePoint)
+            {
+                isReceivePoint = true;
+                oppPointController.SetPoint(oppPointController.points - oppPoint);
+             
+               // oppPointController.CheckPoint();
+            }
+
+            try
+            {
+                GameObject obj = GameObject.Find("Waiting");
+                Destroy(obj);
+            }
+            catch
+            {
+
+            }
+
+
+            if (oppPoint < 10)
+            {
+                GameObject obj = GameObject.Find("oppBlack");
+                if (obj == null)
+                {
+                    obj = Instantiate(blackForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
+                    obj.name = "oppBlack";
+                    gameInitList.Add(obj.name);
+                }
+            }
+
+            else
+            {
+                GameObject obj = GameObject.Find("oppWhite");
+                if (obj == null)
+                {
+                    obj = Instantiate(whiteForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
+                    obj.name = "oppWhite";
+                    gameInitList.Add(obj.name);
+                }
+            }
+        }
+    }
+
+    void WaitingSignOppPointAndCreateOppResultForSecondAttacker()
+    {
+        if(oppPoint==-1 && isFirst==false)
+        {
+            GameObject obj = GameObject.Find("Waiting");
+            if (obj == null)
+            {
+                obj = Instantiate(waitingSignPrefab);
+                obj.GetComponent<Transform>().position = new Vector3(-2.5f, 5, 0);
+                obj.name = "Waiting";
+            }
+        }
+        else if(oppPoint!=-1 && isFirst==false)
+        {
+            if (!isMyTurn)
+            {
+                isMyTurn = true;
+                oppPointController.points = oppPointController.points - oppPoint;
+                oppPointController.CheckPoint();
+            }
+            try
+            {
+                GameObject obj = GameObject.Find("Waiting");
+                Destroy(obj);
+            }
+            catch
+            {
+
+            }
+
+
+            if (oppPoint < 10)
+            {
+                GameObject obj = GameObject.Find("oppBlack");
+                if (obj == null)
+                {
+                    obj = Instantiate(blackForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(-5, 1, 0);
+                    obj.name = "oppBlack";
+                    gameInitList.Add(obj.name);
+                }
+            }
+
+            else
+            {
+                GameObject obj = GameObject.Find("oppWhite");
+                if (obj == null)
+                {
+                    obj = Instantiate(whiteForPointResultPrefab);
+                    obj.GetComponent<Transform>().position = new Vector3(-5, 1, 0);
+                    obj.name = "oppWhite";
+                    gameInitList.Add(obj.name);
+                }
+            }
+            
         }
     }
 

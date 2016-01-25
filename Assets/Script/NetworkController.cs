@@ -123,9 +123,6 @@ public class NetworkController  {
        }
        int point = (int)data[0];
 
-       if (point > 99 || point < 0)
-           return -1;
-
        return point;
     }
 

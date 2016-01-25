@@ -1,12 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <ProjectGuid>{36AB5C44-655D-FD03-6BC4-1EFFB6B51186}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -46,22 +45,22 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Script\BlackAndWhite.cs" />
-    <Compile Include="Assets\Script\InputData.cs" />
-    <Compile Include="Assets\Script\NetworkController.cs" />
-    <Compile Include="Assets\Script\NetworkDef.cs" />
-    <Compile Include="Assets\Script\PacketQueue.cs" />
-    <Compile Include="Assets\Script\RPSPanel.cs" />
-    <Compile Include="Assets\Script\RPSSelector.cs" />
-    <Compile Include="Assets\Script\RPointsController.cs" />
-    <Compile Include="Assets\Script\TCP.cs" />
-    <Compile Include="Assets\Script\TextChanger.cs" />
-    <Reference Include="UnityEngine.UI">
-      <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Networking">
-      <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
-    </Reference>
+     <Compile Include="Assets\Script\BlackAndWhite.cs" />
+     <Compile Include="Assets\Script\InputData.cs" />
+     <Compile Include="Assets\Script\NetworkController.cs" />
+     <Compile Include="Assets\Script\NetworkDef.cs" />
+     <Compile Include="Assets\Script\PacketQueue.cs" />
+     <Compile Include="Assets\Script\RPSPanel.cs" />
+     <Compile Include="Assets\Script\RPSSelector.cs" />
+     <Compile Include="Assets\Script\RPointsController.cs" />
+     <Compile Include="Assets\Script\TCP.cs" />
+     <Compile Include="Assets\Script\TextChanger.cs" />
+ <Reference Include="UnityEngine.UI">
+ <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.Networking">
+ <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll</HintPath>
+ </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -71,4 +70,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  
 </Project>

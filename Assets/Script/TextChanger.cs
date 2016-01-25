@@ -17,6 +17,11 @@ public class TextChanger : MonoBehaviour {
    public void ChangeColor()
     {
       //  GetComponent<TextMesh>().color = Color.white;
-        Destroy(this.gameObject);
+       // Destroy(this.gameObject);
+        //DestroyImmediate(this.gameObject,true);
+        TextMesh tm = gameObject.GetComponent<TextMesh>();
+        tm.text = "";
+        Debug.Log("call change  "+this.gameObject.name);
+        
     }
 }
