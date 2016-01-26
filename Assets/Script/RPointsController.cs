@@ -20,7 +20,7 @@ public class RPointsController : MonoBehaviour {
 	void Update () {
 	}
 
-    public void CheckPoint()
+    public void CheckPoint(string w)
     {
         TextChanger[] changer = transform.GetComponentsInChildren<TextChanger>();
         Debug.Log(limit[0]);
@@ -30,21 +30,17 @@ public class RPointsController : MonoBehaviour {
         for(int i=0;i<limit.Length;i++)
         {
            
-            if(points<limit[i]*10)
+            if(points<limit[i])
             {
                 Debug.Log(limit[i] + " limit " + points);
-                GameObject obj = GameObject.Find((limit[i]*10).ToString());
+                GameObject obj = GameObject.Find(w+((limit[i]).ToString()));
                 if (obj == null)
                     Debug.Log("sdfsdfsdafsdf");
-                try
-                {
-                    Destroy(obj);
-                }
-                catch
-                {
 
-                }
-
+                Debug.Log(this.gameObject.name);
+               
+                    obj.GetComponent<TextMesh>().text = "";
+            
 
                 //Debug.Log(obj.GetComponent<TextMesh>().text + "  SADfsadfd");
                 Debug.Log(points +"  point");

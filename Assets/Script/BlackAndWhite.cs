@@ -30,10 +30,12 @@ public class BlackAndWhite : MonoBehaviour {
     bool isBgCreated = false;  //가위바위보를 위한 게임화면 흐릿하게
    bool isRPSSelected = false; //내가 가위바위보 골랐나
    bool isOppSendRPS = false; //상대가 가위바위보를 골랐나
-     bool isMyTurn = false;
-     bool isCheckWinner = false;
-     bool isFirst = false;
-     bool isReceivePoint = false;
+     bool isMyTurn = false;  //내 턴인지 아닌지
+     bool isCheckWinner = false;   //승리보여주는지 아닌지
+     bool isFirst = false;   //처음 공격인지 아닌지
+     bool isReceivePoint = false;  //포인트정보 받았는지 안받았는지
+     bool isShowResult = false;  //첫공격이 결과 화면 기다리기위해
+
 
 
      RPointsController oppPointController;
@@ -57,7 +59,14 @@ public class BlackAndWhite : MonoBehaviour {
     int myPoint=-1;
     int oppPoint = -1;
 
+    int round = 1; //라운드 수
+    int oppWin = 0;
+    int myWin = 0;
+
     bool isGameOver = false;  //게임이 끝났는지 
+
+    string my = "m";
+    string opp = "o";
 
     float width;
     float height;
@@ -84,6 +93,7 @@ public class BlackAndWhite : MonoBehaviour {
         StartGame,   //게임 시작
         Proceed, //게임 진행
         ShowResult, //라운드 결과
+        FinishGame,
         EndGame,    //끝.
         Disconnect,	//오류.
     };
@@ -98,8 +108,8 @@ public class BlackAndWhite : MonoBehaviour {
         Debug.Log(width + "  " + height + "크기");
 
         gameState = GameState.None;
-       
 
+      
         
 
         nameList = new ArrayList();
@@ -172,15 +182,26 @@ public class BlackAndWhite : MonoBehaviour {
                 DestroyAgainTextAfterTwoSeconds();
                 CreatePointResult();
                 ReceiveOppPointSecondAttack();
+        
                 WaitingSignOppPointAndCreateOppResultForSecondAttacker();
-                ChangeGameStateForSecondAttacker();
-               
+                Debug.Log(GameState.Proceed);
+               // ChangeGameStateForSecondAttacker();
+                chk();
                 break;
 
          case GameState.ShowResult:
                 IsConnectedFalse();
                 ReceiveOppPointFirstAttack();
+        
                 WaitingSignOppPointAndCreateOppResultForFirstAttacker();
+                showMyTurnOrOppTurn();
+                ChangeStateForRestartRound();
+                Debug.Log(GameState.ShowResult);
+                chk();
+                break;
+
+         case GameState.FinishGame:
+                IsConnectedFalse();
                 break;
 
          default:
@@ -221,14 +242,24 @@ public class BlackAndWhite : MonoBehaviour {
 
             case GameState.Proceed:
                 PrintPlayersNickName();
+                ShowRound();
+                ShowWinCount();
                 MakeTextAreaAndButtonForSend();
                 break;
 
             case GameState.ShowResult:
                 PrintPlayersNickName();
+                WaitFiveSecondForShowResultForAllAttacker();
+                ShowRound();
+                ShowWinCount();
+                ShowResult();
                 break;
                   
-                
+            case GameState.FinishGame:
+                PrintPlayersNickName();
+                ShowWinCount();
+                ShowWinner();
+                break;
       
         }
     }
@@ -392,11 +423,13 @@ public class BlackAndWhite : MonoBehaviour {
 
     void PrintPlayersNickName()  // 각 플레이어 이름 생성
     {
-        GUI.Label(new Rect(width - 100f, 30, 120, 20), "이름 : "+nickName);
+        GUI.Label(new Rect(width-120, 30, 120, 20), "내이름 : " + nickName);
        // Debug.Log(nickName);
         GUI.Label(new Rect(20f, 30, 120, 20), "상대방 : "+ oppNickName);
        // Debug.Log("printopp  :"+oppNickName);
     }
+
+  
 
     void SpawnBgAndRPS()  //가위바위보 위에 뒷배경 회색과 가위바위보 생성
     {
@@ -509,6 +542,8 @@ public class BlackAndWhite : MonoBehaviour {
         if(isOppSendRPS==true && isRPSSelected==true)
         {
             gameState = GameState.ChooseWinner;
+            isOppSendRPS = false;
+            isRPSSelected = false;
         }
     }
 
@@ -543,6 +578,7 @@ public class BlackAndWhite : MonoBehaviour {
       {
           if (waitTime > 0.5f)
           {
+              Debug.Log("sfasdljfsadfkjsadf");
               font.fontSize = 100;
               waitTime -= Time.deltaTime;
              if(waitTime>=1.3f)
@@ -612,6 +648,7 @@ public class BlackAndWhite : MonoBehaviour {
                 obj = Instantiate(myTurnShowPrefab);
                 obj.GetComponent<Transform>().position = new Vector3(7f, 4, 0);
                 obj.name = "MYTURN";
+                gameInitList.Add(obj.name);
             }
 
 
@@ -629,7 +666,23 @@ public class BlackAndWhite : MonoBehaviour {
                 obj = Instantiate(oppTurnShowPrefab);
                 obj.GetComponent<Transform>().position = new Vector3(-7f, 4, 0);
                 obj.name = "OPPTURN";
+                gameInitList.Add(obj.name);
             }
+        }
+
+        if(gameState==GameState.ShowResult)
+        {
+            GameObject obj = GameObject.Find("MYTURN");
+            GameObject obj2 = GameObject.Find("OPPTURN");
+
+            if(obj!=null)
+            {
+                Destroy(obj);
+            }
+
+            if (obj2 != null)
+                Destroy(obj2);
+
         }
 
     }
@@ -716,6 +769,7 @@ public class BlackAndWhite : MonoBehaviour {
 
     if(obj1!=null && obj2!=null)
         {
+            waitTime = 5.0f;
             gameState = GameState.Proceed;
         }
     }
@@ -759,11 +813,14 @@ public class BlackAndWhite : MonoBehaviour {
                 }
                 else
                 {
+                    pointString = "";
                     networkController.SendPoints(myPoint);
                     myPointController.SetPoint(myPointController.points - myPoint);
-
+                    myPointController.CheckPoint(my);
+                    Debug.Log("sendpoint  " + myPoint);
                     Debug.Log(myPointController.getPoint() + " mypoint ");
                     isMyTurn = false;
+                
 
                 }
             }
@@ -784,6 +841,7 @@ public class BlackAndWhite : MonoBehaviour {
                     obj.GetComponent<Transform>().position = new Vector3(4, 1, 0);
                     obj.name = "myBlack";
                     gameInitList.Add(obj.name);
+                    gameState = GameState.ShowResult;
                 }
             }
 
@@ -796,6 +854,7 @@ public class BlackAndWhite : MonoBehaviour {
                     obj.GetComponent<Transform>().position = new Vector3(4, 1, 0);
                     obj.name = "myWhite";
                     gameInitList.Add(obj.name);
+                    gameState = GameState.ShowResult;
                 }
             }
         }
@@ -806,14 +865,17 @@ public class BlackAndWhite : MonoBehaviour {
         if(oppPoint==-1 && isFirst==false)
         {
            oppPoint=networkController.ReceivePoint();
+           Debug.Log("Recieve Point  " + oppPoint);
         }
     }
 
     void ReceiveOppPointFirstAttack()
     {
+        Debug.Log("first attack recieve call");
         if (oppPoint == -1 && isFirst == true)
         {
             oppPoint = networkController.ReceivePoint();
+            Debug.Log("Recieve Point  " + oppPoint);
         }
     }
 
@@ -833,16 +895,18 @@ public class BlackAndWhite : MonoBehaviour {
                 obj = Instantiate(waitingSignPrefab);
                 obj.GetComponent<Transform>().position = new Vector3(-2.5f, 5, 0);
                 obj.name = "Waiting";
+                gameInitList.Add(obj.name);
             }
         }
         else if(oppPoint!=-1 && isFirst)
         {
-            if (isReceivePoint)
+            if (isReceivePoint==false)
             {
                 isReceivePoint = true;
+                Debug.Log("comming   " + oppPoint);
                 oppPointController.SetPoint(oppPointController.points - oppPoint);
              
-               // oppPointController.CheckPoint();
+               oppPointController.CheckPoint(opp);
             }
 
             try
@@ -864,6 +928,7 @@ public class BlackAndWhite : MonoBehaviour {
                     obj = Instantiate(blackForPointResultPrefab);
                     obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
                     obj.name = "oppBlack";
+                    isShowResult = true;
                     gameInitList.Add(obj.name);
                 }
             }
@@ -877,9 +942,136 @@ public class BlackAndWhite : MonoBehaviour {
                     obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
                     obj.name = "oppWhite";
                     gameInitList.Add(obj.name);
+                    isShowResult = true;
                 }
             }
         }
+    }
+
+    void ShowResult()
+    {
+        if (waitTime < 0.5f)
+        {
+
+            if (myPoint > oppPoint)
+            {
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "승   리", font);
+                waitTime -= Time.deltaTime;
+                winner = Winner.Win;
+            }
+            else if(myPoint==oppPoint)
+            {
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "비   김", font);
+                waitTime -= Time.deltaTime;
+                winner = Winner.Draw;
+            }
+
+            else
+            {
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "패   배", font);
+                waitTime -= Time.deltaTime;
+                winner = Winner.Loss;
+            }
+        }
+    }
+
+    void ChangeStateForRestartRound()
+    {
+        if(waitTime<-3.0f)
+        {
+            switch(winner)
+            {
+                case Winner.None:
+
+                    break;
+
+                case Winner.Win:
+                      isFirst = true;
+                isMyTurn = true;
+                isReceivePoint = false;
+                isShowResult = false;
+                myPoint = -1;
+                oppPoint = -1;
+                waitTime = 5.0f;
+                DestroyForStartRound();
+                    winner=Winner.None;
+                    myWin++;
+                    round++;
+                    CheckRoundForFinishGame();
+                gameState = GameState.Proceed;
+
+
+                break;
+
+                case Winner.Draw:
+                    if(isFirst==true)
+                    {
+                        isFirst = true;
+                        isMyTurn = true;
+                        isShowResult = false;
+                        isReceivePoint = false;
+                        myPoint = -1;
+                        oppPoint = -1;
+                        waitTime = 5.0f;
+                        DestroyForStartRound();
+                        winner = Winner.None;
+                        round++;
+                        CheckRoundForFinishGame();
+                        gameState = GameState.Proceed;
+                    }
+                    else
+                    {
+                        isMyTurn = false;
+                        isFirst = false;
+                        isReceivePoint = false;
+                        isShowResult = false;
+                        waitTime = 5.0f;
+                        myPoint = -1;
+                        oppPoint = -1;
+                        DestroyForStartRound();
+                        winner = Winner.None;
+                        round++;
+                        CheckRoundForFinishGame();
+                        gameState = GameState.Proceed;
+                    }
+                    break;
+
+
+                case Winner.Loss:
+                    isMyTurn = false;
+                isFirst = false;
+                isReceivePoint = false;
+                isShowResult = false;
+                waitTime = 5.0f;
+                myPoint = -1;
+                oppPoint = -1;
+                oppWin++;
+                DestroyForStartRound();
+                winner = Winner.None;
+                round++;
+                gameState = GameState.Proceed;
+                    break;
+      
+
+            }
+
+        }
+    }
+
+    void WaitFiveSecondForShowResultForAllAttacker()
+    {
+        if (isShowResult == true && isFirst==true )
+            WaitFiveSeconds();
+        if (isFirst == false && isShowResult == false)
+            WaitFiveSeconds();
+    }
+
+    void chk()
+    {
+        Debug.Log(oppPointController.points + "  p " + myPointController.points);
     }
 
     void WaitingSignOppPointAndCreateOppResultForSecondAttacker()
@@ -892,15 +1084,17 @@ public class BlackAndWhite : MonoBehaviour {
                 obj = Instantiate(waitingSignPrefab);
                 obj.GetComponent<Transform>().position = new Vector3(-2.5f, 5, 0);
                 obj.name = "Waiting";
+                gameInitList.Add(obj.name);
             }
         }
         else if(oppPoint!=-1 && isFirst==false)
         {
-            if (!isMyTurn)
+            if (isReceivePoint == false)
             {
+                isReceivePoint = true;
                 isMyTurn = true;
-                oppPointController.points = oppPointController.points - oppPoint;
-                oppPointController.CheckPoint();
+                oppPointController.SetPoint(oppPointController.points - oppPoint);
+                oppPointController.CheckPoint(opp);
             }
             try
             {
@@ -919,7 +1113,7 @@ public class BlackAndWhite : MonoBehaviour {
                 if (obj == null)
                 {
                     obj = Instantiate(blackForPointResultPrefab);
-                    obj.GetComponent<Transform>().position = new Vector3(-5, 1, 0);
+                    obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
                     obj.name = "oppBlack";
                     gameInitList.Add(obj.name);
                 }
@@ -931,7 +1125,7 @@ public class BlackAndWhite : MonoBehaviour {
                 if (obj == null)
                 {
                     obj = Instantiate(whiteForPointResultPrefab);
-                    obj.GetComponent<Transform>().position = new Vector3(-5, 1, 0);
+                    obj.GetComponent<Transform>().position = new Vector3(-4, 1, 0);
                     obj.name = "oppWhite";
                     gameInitList.Add(obj.name);
                 }
@@ -958,6 +1152,49 @@ public class BlackAndWhite : MonoBehaviour {
         }
     }
 
+    void ShowRound()
+    {
+        font.fontSize = 50;
+        GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2 +100, 200, 50), "라운드 "+round, font);
+    }
+
+    void ShowWinCount()
+    {
+        font.fontSize = 30;
+        GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 -210f, 150, 50), oppWin +"              :              "+myWin, font);
+    }
+
+    void ShowWinner()
+    {
+        if(myWin>oppWin)
+        {
+             font.fontSize = 100;
+             GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "이 겼 다", font);
+        }
+
+        else
+        {
+            font.fontSize = 100;
+            GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "졌   음", font);
+        }
+    }
+
+    void DestroyForStartRound()
+    {
+        foreach(string name in gameInitList)
+        {
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                Destroy(obj);
+            }
+            catch
+            {
+
+            }
+        }
+    }
+
     
     void ClearPrefab()
      {
@@ -979,20 +1216,42 @@ public class BlackAndWhite : MonoBehaviour {
       
  
           }
+
+         DestroyForStartRound();
  
          nameList.Clear();
       }
 
+    void CheckRoundForFinishGame()
+    {
+        if (round > 9)
+        {
+            
+            gameState = GameState.FinishGame;
+            round--;
+        }
+
+    }
+
     void ClearAll()
     {
-        isBgCreated = false;
-        isRPSSelected = false;
-        isOppSendRPS = false;
+        isBgCreated = false;  //가위바위보를 위한 게임화면 흐릿하게
+         isRPSSelected = false; //내가 가위바위보 골랐나
+         isOppSendRPS = false; //상대가 가위바위보를 골랐나
+        isMyTurn = false;  //내 턴인지 아닌지
+        isCheckWinner = false;   //승리보여주는지 아닌지
+         isFirst = false;   //처음 공격인지 아닌지
+         isReceivePoint = false;  //포인트정보 받았는지 안받았는지
+         isShowResult = false;  //첫공격이 결과 화면 기다리기위해
 
         nickName = "닉네임"; //내 닉네임
         selectedRPS = RPSKind.None;
         selectedOppRPS = RPSKind.None;
         oppNickName = ""; //상대편 닉네임
+
+        round = 1; //라운드 수
+         oppWin = 0;
+         myWin = 0;
 
         winner = Winner.None;
         waitTime = 5.0f; //기다리는 시간

@@ -123,6 +123,8 @@ public class NetworkController  {
        }
        int point = (int)data[0];
 
+       Debug.Log("point comming " + point);
+
        return point;
     }
 
