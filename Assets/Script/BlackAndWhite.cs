@@ -35,7 +35,8 @@ public class BlackAndWhite : MonoBehaviour {
      bool isFirst = false;   //처음 공격인지 아닌지
      bool isReceivePoint = false;  //포인트정보 받았는지 안받았는지
      bool isShowResult = false;  //첫공격이 결과 화면 기다리기위해
-
+     bool isGameOver = false;  //게임이 끝났는지 
+     bool ischeck = false;
 
 
      RPointsController oppPointController;
@@ -63,7 +64,7 @@ public class BlackAndWhite : MonoBehaviour {
     int oppWin = 0;
     int myWin = 0;
 
-    bool isGameOver = false;  //게임이 끝났는지 
+
 
     string my = "m";
     string opp = "o";
@@ -80,6 +81,7 @@ public class BlackAndWhite : MonoBehaviour {
 
     Winner winner = Winner.None;  //누가 이겼나
 
+    
     private RPSSelector rpsSelector;
 
    
@@ -202,6 +204,8 @@ public class BlackAndWhite : MonoBehaviour {
 
          case GameState.FinishGame:
                 IsConnectedFalse();
+                GoStart();
+                Debug.Log(GameState.FinishGame);
                 break;
 
          default:
@@ -220,10 +224,11 @@ public class BlackAndWhite : MonoBehaviour {
                 break;
 
             case GameState.Ready:
-
+                CantServer();
                 PrintPlayersNickName();
                 break;
             case GameState.SelectRPS:
+                CantServer();
                 PrintPlayersNickName();
                 PrintOppRpsState();
                 break;
@@ -380,6 +385,9 @@ public class BlackAndWhite : MonoBehaviour {
                 networkController = new NetworkController();
                 gameState = GameState.Ready;
                 isGameOver = false;
+                if (networkController.istrue == false)
+                    ischeck = true;
+
 
             }
 
@@ -394,6 +402,13 @@ public class BlackAndWhite : MonoBehaviour {
 
             ipAddr = GUI.TextField(new Rect(px - 65f, py + 200f, 150, 20), ipAddr);
         }
+    }
+
+    void CantServer()
+    {
+        font.fontSize = 50;
+       if(ischeck)
+           GUI.Label(new Rect(Screen.width / 2 - 100, Screen.height / 2 - 20, 200, 50), "안 됨", font);
     }
 
     
@@ -982,6 +997,8 @@ public class BlackAndWhite : MonoBehaviour {
     {
         if(waitTime<-3.0f)
         {
+            int temp = -1;
+
             switch(winner)
             {
                 case Winner.None:
@@ -1000,8 +1017,13 @@ public class BlackAndWhite : MonoBehaviour {
                     winner=Winner.None;
                     myWin++;
                     round++;
-                    CheckRoundForFinishGame();
-                gameState = GameState.Proceed;
+                    temp=CheckRoundForFinishGame();
+                    if(temp==1)
+                    {
+                        gameState = GameState.FinishGame;
+                    }
+                    else
+                       gameState = GameState.Proceed;
 
 
                 break;
@@ -1019,8 +1041,13 @@ public class BlackAndWhite : MonoBehaviour {
                         DestroyForStartRound();
                         winner = Winner.None;
                         round++;
-                        CheckRoundForFinishGame();
-                        gameState = GameState.Proceed;
+                        temp = CheckRoundForFinishGame();
+                        if (temp == 1)
+                        {
+                            gameState = GameState.FinishGame;
+                        }
+                        else
+                            gameState = GameState.Proceed;
                     }
                     else
                     {
@@ -1034,8 +1061,13 @@ public class BlackAndWhite : MonoBehaviour {
                         DestroyForStartRound();
                         winner = Winner.None;
                         round++;
-                        CheckRoundForFinishGame();
-                        gameState = GameState.Proceed;
+                        temp = CheckRoundForFinishGame();
+                        if (temp == 1)
+                        {
+                            gameState = GameState.FinishGame;
+                        }
+                        else
+                            gameState = GameState.Proceed;
                     }
                     break;
 
@@ -1052,7 +1084,13 @@ public class BlackAndWhite : MonoBehaviour {
                 DestroyForStartRound();
                 winner = Winner.None;
                 round++;
-                gameState = GameState.Proceed;
+                   temp=CheckRoundForFinishGame();
+                    if(temp==1)
+                    {
+                        gameState = GameState.FinishGame;
+                    }
+                    else
+                       gameState = GameState.Proceed;
                     break;
       
 
@@ -1166,16 +1204,36 @@ public class BlackAndWhite : MonoBehaviour {
 
     void ShowWinner()
     {
-        if(myWin>oppWin)
-        {
-             font.fontSize = 100;
-             GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "이 겼 다", font);
-        }
+        if (waitTime > 0.4f)
+            waitTime -= Time.deltaTime;
 
-        else
+        if (waitTime < 0.5f)
         {
-            font.fontSize = 100;
-            GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "졌   음", font);
+            waitTime -= Time.deltaTime;
+            if (myWin > oppWin)
+            {
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 150, Screen.height / 2 - 70, 200, 50), "이 겼 다", font);
+            }
+
+            else
+            {
+                font.fontSize = 100;
+                GUI.Label(new Rect(Screen.width / 2 - 120, Screen.height / 2 - 70, 200, 50), "졌   음", font);
+            }
+        }
+    }
+
+    void GoStart()
+    {
+        if(waitTime<-3.0f)
+        {
+            ClearAll();
+            ClearPrefab();
+        
+            networkController.StopServer();
+            networkController = null;
+            gameState = GameState.None;
         }
     }
 
@@ -1193,6 +1251,8 @@ public class BlackAndWhite : MonoBehaviour {
 
             }
         }
+
+        gameInitList.Clear();
     }
 
     
@@ -1222,14 +1282,19 @@ public class BlackAndWhite : MonoBehaviour {
          nameList.Clear();
       }
 
-    void CheckRoundForFinishGame()
+    int CheckRoundForFinishGame()
     {
         if (round > 9)
         {
-            
-            gameState = GameState.FinishGame;
+
+            waitTime=3.0f;
             round--;
+            return 1;
         }
+
+
+        else
+            return 0;
 
     }
 
@@ -1243,11 +1308,16 @@ public class BlackAndWhite : MonoBehaviour {
          isFirst = false;   //처음 공격인지 아닌지
          isReceivePoint = false;  //포인트정보 받았는지 안받았는지
          isShowResult = false;  //첫공격이 결과 화면 기다리기위해
+         isGameOver = false;  //게임이 끝났는지 
+         ischeck = false;
 
         nickName = "닉네임"; //내 닉네임
         selectedRPS = RPSKind.None;
         selectedOppRPS = RPSKind.None;
         oppNickName = ""; //상대편 닉네임
+
+        oppPointController.SetPoint(99);
+        myPointController.SetPoint(99);
 
         round = 1; //라운드 수
          oppWin = 0;
@@ -1258,8 +1328,7 @@ public class BlackAndWhite : MonoBehaviour {
          waitThreeSec = 3.0f;
          waitForPlay = 3.0f;
         sendTime = -1.0f;  //보내는 시간
-        isGameOver = false;  //게임이 끝났는지 
-
+      
     }
 
     void ClearForDraw()

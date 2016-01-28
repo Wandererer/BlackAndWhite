@@ -4,7 +4,7 @@ using System.Collections;
 public class NetworkController  {
     const int PORT = 50765;
     TCP network;
-
+    public bool istrue;
     //서버 클라이언트 판정용.
     public enum HostType
     {
@@ -16,11 +16,12 @@ public class NetworkController  {
 
     public NetworkController()
     {
+       
         hostType = HostType.Server;
 
         GameObject nObj = GameObject.Find("Network");
         network = nObj.GetComponent<TCP>();
-        network.StartServer(PORT, 1);
+        istrue=network.StartServer(PORT, 1);
     }
 
     //클라이언트에서 사용할 때.
